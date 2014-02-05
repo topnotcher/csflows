@@ -3,6 +3,7 @@ require_relative 'syslog'
 require 'time'
 
 syslog = SyslogSampler.new('0.0.0.0',1337,1000, 512)
+processor = PAFlowProcessor.new
 
 while true do
 	record = syslog.get
@@ -15,7 +16,7 @@ while true do
 	host = log.slice!(0,log.index(' '))
 	log.lstrip!
 
-	process_flow_syslog(log)
+	processor.process(dt,log)
 
 end
 
