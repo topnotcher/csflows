@@ -22,6 +22,8 @@ class PAFlowProcessor
 	def initialize
 		@new_cols = @@cols - @@exclude_cols
 		@new_cols += ['iso_dept','iso_desc']
+		
+		#@TODO
 		@dept_data = DeptData.new('sc_deployment.csv')
 	end
 
@@ -33,9 +35,16 @@ class PAFlowProcessor
 
 	def rotate_date_file(date)
 		@date = date
-		@fh.close if @fh
+		
+		# @TODO
+		if @fh
+			@fh.close
+			lzma = fork {exec "lzma #{@filename}"}
+			Process.detach(lzma)
+		end
 
-		@fh = File.new('flows-%s.csv' % [@date],'a')
+		@filename = 'flows-%s.csv' % [@date]
+		@fh = File.new(@filename,'a')
 
 		write_log_header
 	end
