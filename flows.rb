@@ -1,48 +1,8 @@
 require_relative 'net'
-
-file = 'log.csv'
-
-$result = {}
+require_relative 'dept_data'
 
 
-def analyze(data)
-#	puts data
-	sip = data['Source address']
-
-	$result[sip] = 0 unless $result.include? sip
-
-	$result[sip] += data['pkts_sent'].to_i + data['pkts_received'].to_i
-end
-
-
-
-$dept_data = []
-File.open('sc_deployment.csv') do |fh|
-	lines = fh.read.lines
-	lines.drop(1)
-	data = []
-
-	lines.each do |line|
-		data = line.strip.split(',',5)
-	
-		dept_info = cidr2range(data[0])
-		dept_info[:iso_dept] = data[3]
-		dept_info[:iso_desc] = data[4]
-		$dept_data << dept_info
-	end
-end
-
-def get_dept_data_by_ip(ip) 
-	ip = ip2n(ip)
-
-	$dept_data.each do |dept|
-		return dept if ip <= dept[:ip_max] and ip >= dept[:ip_min]
-	end
-
-	return nil
-end
-
-
+$dept_data = DeptData.new('sc_deployment.csv')
 
 def process_flow_syslog(line)
 	exclude_cols = ['domain','serial','config_version', 'nat_source_ip', 'nat_destination_ip', 'source_user', 'destination_user', 'virtual_system', 'inbound_interface', 'outbound_interface', 'session_id']
@@ -84,8 +44,8 @@ def process_flow_syslog(line)
 	end
 
 
-	dept = get_dept_data_by_ip(data[src_ip_idx])
-	dept = get_dept_data_by_ip(data[dest_ip_idx]) unless dept
+	dept = $dept_data.lookup(data[src_ip_idx])
+	dept = $dept_data.lookup(data[dest_ip_idx]) unless dept
 
 	if dept 
 		new_data <<= dept[:iso_dept]
