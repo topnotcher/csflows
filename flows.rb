@@ -1,3 +1,5 @@
+require_relative 'net'
+
 file = 'log.csv'
 
 $result = {}
@@ -12,30 +14,6 @@ def analyze(data)
 	$result[sip] += data['pkts_sent'].to_i + data['pkts_received'].to_i
 end
 
-def ip2n(ip)
-	n = 0
-	shift = 24
-	ip.split('.').each do |octet| 
-		n += (octet.to_i<<shift)
-		shift -= 8
-	end
-	return n
-end
-
-def cidr2range(cidr)
-	ip,prefix = cidr.split('/')
-	prefix = prefix.to_i
-	ip = ip2n(ip)
-	mask = 0xffffffff - (2**(32-prefix)-1) 
-
-	ip_start = ip&mask
-	ip_end = ip_start + 2**(32-prefix)-1
-
-	return {
-		ip_max: ip_end,
-		ip_min: ip_start
-	}
-end
 
 
 $dept_data = []
@@ -66,54 +44,58 @@ end
 
 
 
-File.open(file) do |fh|
-	lines = fh.read.lines
+def process_flow_syslog(line)
+	exclude_cols = ['domain','serial','config_version', 'nat_source_ip', 'nat_destination_ip', 'source_user', 'destination_user', 'virtual_system', 'inbound_interface', 'outbound_interface', 'session_id']
 
-	exclude_cols = ['Domain','Serial #','Config Version', 'NAT Source IP', 'NAT Destination IP', 'Source User', 'Destination User', 'Virtual System', 'Inbound Interface', 'Outbound Interface', 'Session ID']
-
-	cols = lines.first.strip.split(',')
-	lines = lines.drop(1)
+	cols = %w{
+		domain receive_time serial type type config_version generate_time source_address 
+		destination_address nat_source_ip nat_destination_ip rule source_user destination_user 
+		application virtual_system source_zone destination_zone inbound_interface outbound_interface 
+		log_action time_logged session_id repeat_count source_port destination_port nat_source_port 
+		nat_destination_port flags ip_protocol action bytes bytes_sent bytes_received packets 
+		start_time elapsed_seconds category padding seqno actionflags source_country destination_country 
+		cpadding pkts_sent pkts_received
+	}
+ 
 	new_cols = cols-exclude_cols
 	new_cols += ['iso_dept','iso_desc']
 
-	new = File.open('new.csv','w')
+	new = File.open('new.csv','a')
 
-	new.write(new_cols.join(','))
-	new.write("\n")
+#	new.write(new_cols.join(','))
+#	new.write("\n")
 
-	lines.each do |line|
-		data = line.strip.split(',')
-		
-		new_data = []
-		src_ip_idx = nil
-		dest_ip_idx = nil
-		# drop cols
-		(0..data.size-1).each do |i|
-			new_data <<= data[i] unless exclude_cols.include? cols[i] 
+	data = line.strip.split(',')
+	
+	new_data = []
+	src_ip_idx = nil
+	dest_ip_idx = nil
+	# drop cols
+	(0..data.size-1).each do |i|
+		new_data <<= data[i] unless exclude_cols.include? cols[i] 
 
-			if cols[i] == 'Destination address'
-				dest_ip_idx = i
-			end
-
-			if cols[i] == 'Source address'
-				src_ip_idx = i
-			end
+		if cols[i] == 'destination_address'
+			dest_ip_idx = i
 		end
 
-
-		dept = get_dept_data_by_ip(data[src_ip_idx])
-		dept = get_dept_data_by_ip(data[dest_ip_idx]) unless dept
-
-		if dept 
-			new_data <<= dept[:iso_dept]
-			new_data <<= dept[:iso_desc]
-		else
-			new_data += ['','']
+		if cols[i] == 'source_address'
+			src_ip_idx = i
 		end
-
-		new.write(new_data.join(','))
-		new.write("\n");
-		#puts new_data
 	end
+
+
+	dept = get_dept_data_by_ip(data[src_ip_idx])
+	dept = get_dept_data_by_ip(data[dest_ip_idx]) unless dept
+
+	if dept 
+		new_data <<= dept[:iso_dept]
+		new_data <<= dept[:iso_desc]
+	else
+		new_data += ['','']
+	end
+
+	new.write(new_data.join(','))
+	new.write("\n");
+	#puts new_data
 	new.close
 end

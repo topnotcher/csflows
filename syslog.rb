@@ -1,15 +1,25 @@
 require 'socket'
 
-svr = UDPSocket.new
 
-svr.bind('0.0.0.0',1337)
+class SyslogSampler
 
-i = 0
-while true do
-	data = svr.recvfrom(512)
+	def initialize(ip,port,samplerate, max=512)
+		@sock = UDPSocket.new
+		@sock.bind(ip,port)
+		@max = max
+		@rate = samplerate
+	end
+	
+	def get
+		i = 0
+		while true do
+			data = @sock.recvfrom(@max)
 
-	process(data) if i == 0
+			i += 1
+			i = 0 if i >= @rate
 
-	i += 1
-	i = 0 if i == 1000
+			return data if i == 1
+
+		end
+	end
 end
