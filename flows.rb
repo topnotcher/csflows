@@ -22,40 +22,49 @@ class PAFlowProcessor
 	def initialize
 		@new_cols = @@cols - @@exclude_cols
 		@new_cols += ['iso_dept','iso_desc']
-		
+	
+		#last date from each source. 
+		@dates = {}
+
+		#file handles per source
+		@fhs = {}
+
+		#filenames per source
+		@filenames = {}
+
 		#@TODO
 		@dept_data = DeptData.new('sc_deployment.csv')
 	end
 
-	def get_log_fh(dt)
+	def get_log_fh(dt,src)
 		date = dt.to_date
-		rotate_date_file(date) if @date != date 
-		return @fh
+		rotate_date_file(date,src) if @dates[src] != date 
+		return @fhs[src]
 	end
 
-	def rotate_date_file(date)
-		@date = date
+	def rotate_date_file(date,src)
+		@dates[src] = date
 		
 		# @TODO
-		if @fh
-			@fh.close
-			lzma = fork {exec "lzma #{@filename}"}
+		if @fhs[src]
+			@fhs[src].close
+			lzma = fork {exec "lzma #{@filenames[src]}"}
 			Process.detach(lzma)
 		end
 
-		@filename = 'flows-%s.csv' % [@date]
-		@fh = File.new(@filename,'a')
+		@filenames[src] = 'flows-%s-%s.csv' % [src,@dates[src]]
+		@fhs[src] = File.new(@filenames[src],'a')
 
-		write_log_header
+		write_log_header @fhs[src]
 	end
 
-	def write_log_header
-		@fh.write(@new_cols.join(','))
-		@fh.write("\n")
+	def write_log_header(fh)
+		fh.write(@new_cols.join(','))
+		fh.write("\n")
 	end
 
-	def process(dt,line)
-		fh = get_log_fh(dt)
+	def process(dt,src,line)
+		fh = get_log_fh(dt,src)
 
 		data = line.strip.split(',')
 		
@@ -88,5 +97,4 @@ class PAFlowProcessor
 
 		fh.write(new_data.join(','))
 		fh.write("\n");
-	end
-end
+	end end

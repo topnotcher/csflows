@@ -5,9 +5,11 @@ require 'time'
 syslog = SyslogSampler.new('0.0.0.0',1337,1000, 512)
 processor = PAFlowProcessor.new
 
+
 while true do
 	record = syslog.get
 	log = record[0]
+	src = record[1][2]
 
 	#slice out facility. 
 	log.slice!(0,log.index('>')+1)
@@ -16,7 +18,7 @@ while true do
 	host = log.slice!(0,log.index(' '))
 	log.lstrip!
 
-	processor.process(dt,log)
+	processor.process(dt,src,log)
 
 end
 

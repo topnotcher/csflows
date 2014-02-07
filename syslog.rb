@@ -8,17 +8,19 @@ class SyslogSampler
 		@sock.bind(ip,port)
 		@max = max
 		@rate = samplerate
+		@counters = {}
 	end
 	
 	def get
-		i = 0
 		while true do
 			data = @sock.recvfrom(@max)
+			src = data[1][2]
 
-			i += 1
-			i = 0 if i >= @rate
+			@counters[src] ||= 0
+			@counters[src] += 1
+			@counters[src] = 0 if @counters[src] >= @rate
 
-			return data if i == 1
+			return data if @counters[src] == 1
 
 		end
 	end
