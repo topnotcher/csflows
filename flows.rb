@@ -48,8 +48,8 @@ class PAFlowProcessor
 		# @TODO
 		if @fhs[src]
 			@fhs[src].close
-			lzma = fork {exec "lzma #{@filenames[src]}"}
-			Process.detach(lzma)
+			#lzma = fork {exec "lzma #{@filenames[src]}"}
+			#Process.detach(lzma)
 		end
 
 		@filenames[src] = 'flows-%s-%s.csv' % [src,@dates[src]]
