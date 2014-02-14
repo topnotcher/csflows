@@ -42,9 +42,10 @@ class PALogProcessor
 		end
 
 		@filenames[src] = '%s-%s-%s.csv' % [@name,src,@dates[src]]
+		skip_header = File.exist?(@filenames[src])
 		@fhs[src] = File.new(@filenames[src],'a')
 
-		write_log_header @fhs[src]
+		write_log_header @fhs[src] unless skip_header
 	end
 
 	def write_log_header(fh)
