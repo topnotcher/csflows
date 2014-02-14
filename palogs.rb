@@ -4,23 +4,12 @@ require_relative 'dept_data'
 
 
 class PALogProcessor
-	@@exclude_cols = %w{
-		domain serial config_version nat_source_ip nat_destination_ip source_user destination_user
-		virtual_system inbound_interface outbound_interface session_id
-	}
+	def initialize(config)
+		@cols = config[:cols]
+		@exclude_cols = config[:exclude_cols]
+		@name = config[:name]
 
-	@@cols = %w{
-		domain receive_time serial type content_type config_version generate_time source_address 
-		destination_address nat_source_ip nat_destination_ip rule source_user destination_user 
-		application virtual_system source_zone destination_zone inbound_interface outbound_interface 
-		log_action time_logged session_id repeat_count source_port destination_port nat_source_port 
-		nat_destination_port flags ip_protocol action bytes bytes_sent bytes_received packets 
-		start_time elapsed_seconds category padding seqno actionflags source_country destination_country 
-		cpadding pkts_sent pkts_received
-	}
-
-	def initialize
-		@new_cols = @@cols - @@exclude_cols
+		@new_cols = @cols - @exclude_cols
 		@new_cols += ['iso_dept','iso_desc']
 	
 		#last date from each source. 
@@ -52,7 +41,7 @@ class PALogProcessor
 			#Process.detach(lzma)
 		end
 
-		@filenames[src] = 'flows-%s-%s.csv' % [src,@dates[src]]
+		@filenames[src] = '%s-%s-%s.csv' % [@name,src,@dates[src]]
 		@fhs[src] = File.new(@filenames[src],'a')
 
 		write_log_header @fhs[src]
@@ -73,13 +62,13 @@ class PALogProcessor
 		dest_ip_idx = nil
 		# drop cols
 		(0..data.size-1).each do |i|
-			new_data <<= data[i] unless @@exclude_cols.include? @@cols[i] 
+			new_data <<= data[i] unless @exclude_cols.include? @cols[i] 
 
-			if @@cols[i] == 'destination_address'
+			if @cols[i] == 'destination_address'
 				dest_ip_idx = i
 			end
 
-			if @@cols[i] == 'source_address'
+			if @cols[i] == 'source_address'
 				src_ip_idx = i
 			end
 		end

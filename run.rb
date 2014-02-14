@@ -3,24 +3,32 @@ require_relative 'syslog'
 require 'time'
 require 'yaml'
 
-syslog = SyslogSampler.new('0.0.0.0',1337,100, 512)
-processor = PALogProcessor.new
-
+sources = []
+config = YAML::load(File.open('samples.yaml'))
+config[:sources].each do |source|
+	processor_config = source[:processor]
+	sources << {
+		syslog: SyslogSampler.new('0.0.0.0',source[:port],source[:rate], 512),
+		processor: Object::const_get(source[:processor][:class]).new(source[:processor])
+	}
+ 
+end
 
 while true do
-	record = syslog.get
-	log = record[0]
-	src = record[1][2]
+	sources.each do |source|
+		record = source[:syslog].get
+		log = record[0]
+		src = record[1][2]
 
-	#slice out facility. 
-	log.slice!(0,log.index('>')+1)
-	dt = Time.parse(log.slice!(0,15))
-	log.lstrip!
-	host = log.slice!(0,log.index(' '))
-	log.lstrip!
+		#slice out facility. 
+		log.slice!(0,log.index('>')+1)
+		dt = Time.parse(log.slice!(0,15))
+		log.lstrip!
+		host = log.slice!(0,log.index(' '))
+		log.lstrip!
 
-	processor.process(dt,src,log)
-
+		source[:processor].process(dt,src,log)
+	end
 end
 
 #["LOG DATA", ["AF_INET", 33704, "ipaddress", "ipaddress"]]
