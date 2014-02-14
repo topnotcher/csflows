@@ -12,7 +12,7 @@ def cidr2range(cidr)
 	ip,prefix = cidr.split('/')
 	prefix = prefix.to_i
 	ip = ip2n(ip)
-	mask = 0xffffffff - (2**(32-prefix)-1) 
+	mask = (0xffffffff - (2**(32-prefix)-1)).to_i 
 
 	ip_start = ip&mask
 	ip_end = ip_start + 2**(32-prefix)-1
