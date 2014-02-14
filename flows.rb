@@ -10,7 +10,7 @@ class PAFlowProcessor
 	}
 
 	@@cols = %w{
-		domain receive_time serial type type config_version generate_time source_address 
+		domain receive_time serial type content_type config_version generate_time source_address 
 		destination_address nat_source_ip nat_destination_ip rule source_user destination_user 
 		application virtual_system source_zone destination_zone inbound_interface outbound_interface 
 		log_action time_logged session_id repeat_count source_port destination_port nat_source_port 
