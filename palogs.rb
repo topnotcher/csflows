@@ -3,7 +3,7 @@ require_relative 'dept_data'
 
 
 
-class PAFlowProcessor
+class PALogProcessor
 	@@exclude_cols = %w{
 		domain serial config_version nat_source_ip nat_destination_ip source_user destination_user
 		virtual_system inbound_interface outbound_interface session_id

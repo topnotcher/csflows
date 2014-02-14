@@ -1,9 +1,10 @@
-require_relative 'flows'
+require_relative 'palogs'
 require_relative 'syslog'
 require 'time'
+require 'yaml'
 
 syslog = SyslogSampler.new('0.0.0.0',1337,100, 512)
-processor = PAFlowProcessor.new
+processor = PALogProcessor.new
 
 
 while true do
