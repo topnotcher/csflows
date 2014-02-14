@@ -20,7 +20,7 @@ class SyslogSampler
 			@counters[src] += 1
 			@counters[src] = 0 if @counters[src] >= @rate
 
-			return data if @counters[src] == 1
+			return data if @counters[src] == 0
 
 		end
 	end
